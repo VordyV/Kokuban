@@ -1,0 +1,5 @@
+﻿LIBRARY	"RendDX9"
+
+EXPORTS
+		initDll=ORDX9.initDll
+		deinitDll=ORDX9.deinitDll

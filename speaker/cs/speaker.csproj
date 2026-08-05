@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>14</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PublishAot>true</PublishAot>
+        <NativeLib>Shared</NativeLib>
+        <SelfContained>true</SelfContained>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <AssemblyName>kbs</AssemblyName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Hexa.NET.ImGui" Version="2.2.9" />
+      <PackageReference Include="Hexa.NET.ImGui.Backends" Version="1.0.18" />
+      <PackageReference Include="MessagePack" Version="3.1.8" />
+    </ItemGroup>
+
+</Project>

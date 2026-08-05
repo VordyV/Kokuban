@@ -1,0 +1,23 @@
+[project]
+name = "kokuban-server"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "vordy",email = "vorklab@outlook.com"}
+]
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "prompt-toolkit (>=3.0.52,<4.0.0)",
+    "rich (>=15.0.0,<16.0.0)",
+    "loguru (>=0.7.3,<0.8.0)",
+    "callixir (>=0.1.1,<0.2.0)",
+    "fastapi (>=0.139.0,<0.140.0)",
+    "uvicorn (>=0.51.0,<0.52.0)",
+    "tornado (>=6.5.7,<7.0.0)",
+    "msgspec (>=0.21.1,<0.22.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

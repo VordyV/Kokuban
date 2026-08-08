@@ -13,6 +13,7 @@ vcpkg_installed
 .venv
 *.log
 test.py
+kb.db
 
 # User-specific files
 *.rsuser

@@ -37,16 +37,16 @@ class Client:
 	def profile(self) -> str | None: return self.__profile
 
 	@property
-	def game_server(self) -> str | None: return self.__profile
+	def game_server(self) -> str | None: return self.__game_server
 
 	@property
 	def auth_data(self) -> str | None: return self.__auth_data
 
 	@property
-	def LPT(self) -> int | None: return self.__lpt
+	def LPT(self) -> int | None: return self.__lpt # # last ping time
 
 	@property
-	def LSPRT(self) -> int | None: return self.__lsprt
+	def LSPRT(self) -> int | None: return self.__lsprt # last successful ping response time
 
 	@property
 	def key_hash(self) -> str | None: return self.__key_hash

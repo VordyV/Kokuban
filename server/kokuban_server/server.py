@@ -87,6 +87,20 @@ class Server(TCPServer):
 			tasks.append(self._send(data, client.stream, client))
 		await asyncio.gather(*tasks)
 
+	async def send_to_profile(self, data: bytes, profile: str):
+		for client in self.__clients.copy():
+			if client.stream.closed(): continue
+			if client.profile == None: continue
+			if client.profile == profile: await self._send(data, client.stream, client)
+		raise Exception(f"Client with profile `{profile}` not found")
+
+	async def send_to_keyhash(self, data: bytes, keyhash: str):
+		for client in self.__clients.copy():
+			if client.stream.closed(): continue
+			if client.profile == None: continue
+			if client.profile == keyhash: await self._send(data, client.stream, client)
+		raise Exception(f"Client with keyhash `{keyhash}` not found")
+
 	def has_key_hash(self, key_hash: str):
 		for client in self.__clients.copy():
 			if client.key_hash == key_hash: return True

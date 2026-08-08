@@ -1,0 +1,70 @@
+name: Build and Attach Release Assets
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish speaker
+        working-directory: speaker
+        run: |
+          dotnet publish -r win-x86 -c Release --self-contained -o ./publish
+          Compress-Archive -Path ./publish/* -DestinationPath ../speaker-win-x86.zip -Force
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg --depth 1
+          C:\vcpkg\bootstrap-vcpkg.bat
+          C:\vcpkg\vcpkg.exe integrate install
+          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+          echo "VCPKG_DEFAULT_TRIPLET=x86-windows" >> $env:GITHUB_ENV
+
+      - name: Build proxy
+        working-directory: proxy
+        run: |
+          msbuild proxy.vcxproj `
+            /p:Configuration=Release `
+            /p:Platform=Win32 `
+            /p:VcpkgEnabled=true `
+            /p:OutDir=.\bin\ `
+            /m
+
+          Compress-Archive -Path .\bin\* -DestinationPath ..\proxy-win-x86.zip -Force
+
+      - name: Build underfacility
+        working-directory: underfacility
+        run: |
+          msbuild underfacility.vcxproj `
+            /p:Configuration=Release `
+            /p:Platform=Win32 `
+            /p:OutDir=.\bin\ `
+            /m
+
+          Compress-Archive -Path .\bin\* -DestinationPath ..\underfacility-win-x86.zip -Force
+
+      - name: Upload assets to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            speaker-win-x86.zip
+            proxy-win-x86.zip
+            underfacility-win-x86.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

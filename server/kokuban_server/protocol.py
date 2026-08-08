@@ -30,6 +30,7 @@ class Protocol:
 		if not client.auth_data and agent and len(kh) == 32:
 			client.set_auth_data(agent)
 			logger.info(f"{client.address}:{client.port} authenticated. Agent '{agent}'")
+			client.set_key_hash(kh)
 			return
 			yield
 		elif client.auth_data:
@@ -39,14 +40,13 @@ class Protocol:
 			logger.info(f"{client.address}:{client.port} attempted to authenticate with incorrect data")
 			yield Package.create_pkg_error(ErrorType.incorrect_auth_data)
 
+
 		if not kh or len(kh) != 32:
 			logger.info(f"{client.address}:{client.port} incorrect key hash")
 			yield Package.create_pkg_error(ErrorType.incorrect_key_hash)
 		#elif client.server.has_key_hash(kh):
 		#	logger.info(f"{client.address}:{client.port} incorrect key hash")
 		#	yield Package.create_pkg_error(ErrorType.incorrect_key_hash)
-		else:
-			client.set_key_hash(kh)
 
 	@staticmethod
 	@is_auth

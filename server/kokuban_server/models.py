@@ -1,0 +1,10 @@
+server_model = '''
+CREATE TABLE IF NOT EXISTS Server  (
+	Id INTEGER PRIMARY KEY AUTOINCREMENT,
+	Name TEXT NOT NULL UNIQUE,
+	Comment TEXT,
+	Token TEXT NOT NULL,
+	DTCreate INTEGER,
+	DTUpdate INTEGER
+);
+'''

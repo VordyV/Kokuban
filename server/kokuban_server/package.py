@@ -1,3 +1,4 @@
+from __future__ import annotations
 from .package_type import PackageType
 from .error_type import ErrorType
 import msgspec

@@ -1,4 +1,4 @@
-name: Build and Attach Release Assets
+name: Build Release
 
 on:
   release:
@@ -8,63 +8,145 @@ permissions:
   contents: write
 
 jobs:
-  build:
+
+  build-proxy:
+    name: Build proxy
     runs-on: windows-latest
+
     steps:
-      - name: Checkout
+      # Task 1 — Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Task 2 — Setup vcpkg
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+
+      # Task 3 — Build
+      - name: Build proxy
+        shell: pwsh
+        run: |
+          msbuild proxy/*.vcxproj `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /m
+
+      - name: Upload proxy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: proxy
+          path: |
+            proxy/**/RendDX9.dll
+          if-no-files-found: error
+
+
+  build-speaker:
+    name: Build speaker
+    runs-on: windows-latest
+
+    steps:
+      # Task 1 — Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Task 2 — Setup .NET
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
+      # Task 3 — Build
       - name: Publish speaker
-        working-directory: speaker
+        working-directory: speaker/cs
         run: |
-          dotnet publish -r win-x86 -c Release --self-contained -o ./publish
-          Compress-Archive -Path ./publish/* -DestinationPath ../speaker-win-x86.zip -Force
+          dotnet publish -r win-x86 -c Release --self-contained
 
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v2
-
-      - name: Setup vcpkg
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg --depth 1
-          C:\vcpkg\bootstrap-vcpkg.bat
-          C:\vcpkg\vcpkg.exe integrate install
-          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
-          echo "VCPKG_DEFAULT_TRIPLET=x86-windows" >> $env:GITHUB_ENV
-
-      - name: Build proxy
-        working-directory: proxy
-        run: |
-          msbuild proxy.vcxproj `
-            /p:Configuration=Release `
-            /p:Platform=Win32 `
-            /p:VcpkgEnabled=true `
-            /p:OutDir=.\bin\ `
-            /m
-
-          Compress-Archive -Path .\bin\* -DestinationPath ..\proxy-win-x86.zip -Force
-
-      - name: Build underfacility
-        working-directory: underfacility
-        run: |
-          msbuild underfacility.vcxproj `
-            /p:Configuration=Release `
-            /p:Platform=Win32 `
-            /p:OutDir=.\bin\ `
-            /m
-
-          Compress-Archive -Path .\bin\* -DestinationPath ..\underfacility-win-x86.zip -Force
-
-      - name: Upload assets to release
-        uses: softprops/action-gh-release@v2
+      - name: Upload speaker artifacts
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            speaker-win-x86.zip
-            proxy-win-x86.zip
-            underfacility-win-x86.zip
+          name: speaker
+          path: |
+            speaker/cs/bin/Release/net10.0/win-x86/publish/kbs.dll
+            speaker/cs/bin/Release/net10.0/win-x86/publish/ImGuiImpl.dll
+            speaker/cs/bin/Release/net10.0/win-x86/publish/cimgui.dll
+          if-no-files-found: error
+
+
+  build-underfacility:
+    name: Build underfacility
+    runs-on: windows-latest
+
+    steps:
+      # Task 1 — Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Task 2 — Setup DirectX SDK
+      - name: Setup DirectX SDK
+        shell: pwsh
+        run: |
+          # Здесь устанавливается/подключается DirectX SDK,
+          # необходимый проекту underfacility.
+          #
+          # Если SDK уже присутствует в runner или проект
+          # содержит корректные пути к SDK, этот шаг можно убрать.
+
+      # Task 3 — Build
+      - name: Build underfacility
+        shell: pwsh
+        run: |
+          msbuild underfacility/*.vcxproj `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /m
+
+      - name: Upload underfacility artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: underfacility
+          path: |
+            underfacility/**/kbuf.dll
+          if-no-files-found: error
+
+  release:
+    name: Add artifacts to release
+    runs-on: windows-latest
+
+    needs:
+      - build-proxy
+      - build-speaker
+      - build-underfacility
+
+    steps:
+      - name: Download proxy artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: proxy
+          path: release/proxy
+
+      - name: Download speaker artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: speaker
+          path: release/speaker
+
+      - name: Download underfacility artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: underfacility
+          path: release/underfacility
+
+      - name: Upload artifacts to GitHub Release
+        shell: pwsh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" `
+            release/proxy/RendDX9.dll `
+            release/speaker/kbs.dll `
+            release/speaker/ImGuiImpl.dll `
+            release/speaker/cimgui.dll `
+            release/underfacility/kbuf.dll `
+            --clobber

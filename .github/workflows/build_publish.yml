@@ -21,7 +21,7 @@ jobs:
 
       - name: Build proxy
         run: |
-          msbuild proxy\*.vcxproj `
+          msbuild proxy.vcxproj `
             /p:Configuration=Release `
             /p:Platform=x86
 

@@ -160,6 +160,12 @@ jobs:
           name: underfacility
           path: release
 
+      - name: Archive creation
+        shell: pwsh
+        working-directory: release
+        run: |
+          Compress-Archive -Path ./* -DestinationPath kokuban-${{ github.event.release.tag_name }}-win.zip
+
       - name: Create/Update GitHub Release
         uses: softprops/action-gh-release@v2
         env:
@@ -169,8 +175,4 @@ jobs:
           overwrite_files: true
           fail_on_unmatched_files: true
           files: |
-            release/RendDX9.dll
-            release/kbs.dll
-            release/ImGuiImpl.dll
-            release/cimgui.dll
-            release/kbuf.dll
+            release/kokuban-${{ github.event.release.tag_name }}-win.zip

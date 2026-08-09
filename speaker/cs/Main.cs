@@ -288,6 +288,12 @@ public static unsafe class Main
             ImGui.SetNextWindowPos(new Vector2((ImGui.GetMainViewport().Size.X / 2) - (550.0f / 2), (ImGui.GetMainViewport().Size.Y / 2) - (300.0f / 2)));
             if (ImGui.Begin("Connection lost###KbMsgForm", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar))
             {
+                ImGui.SetNextFrameWantCaptureKeyboard(true);
+                if (ImGui.Shortcut((int)ImGuiKey.LeftCtrl))
+                {
+                    _uiFlag_IsVisibleDialogEvent = false;
+                }
+                
                 ImGui.PushFont(null, 20f);
                 ImGui.TextUnformatted(P.Get("dialog.title.lostconn").ToUpper());
                 ImGui.PopFont();

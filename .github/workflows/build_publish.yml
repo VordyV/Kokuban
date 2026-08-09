@@ -160,15 +160,17 @@ jobs:
           name: underfacility
           path: release
 
-      - name: Add files to release
-        shell: pwsh
+      - name: Create/Update GitHub Release
+        uses: softprops/action-gh-release@v2
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release upload "${{ github.event.release.tag_name }}" `
-            release\RendDX9.dll `
-            release\kbs.dll `
-            release\ImGuiImpl.dll `
-            release\cimgui.dll `
-            release\kbuf.dll `
-            --clobber
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          preserve_order: true
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          files: |
+            release/RendDX9.dll
+            release/kbs.dll
+            release/ImGuiImpl.dll
+            release/cimgui.dll
+            release/kbuf.dll

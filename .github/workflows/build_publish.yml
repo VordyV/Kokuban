@@ -27,20 +27,20 @@ jobs:
             /p:Platform=x86
 
       - name: Check artifact
+        working-directory: proxy
         shell: pwsh
         run: |
-          if (!(Test-Path "proxy\RendDX9.dll")) {
-            Write-Error "RendDX9.dll was not found"
+          if (!(Test-Path "Release\RendDX9.dll")) {
+            Write-Error "Release\RendDX9.dll not found"
             exit 1
           }
 
-      - name: Upload build artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: proxy
-          path: proxy\RendDX9.dll
-
-
+          path: proxy/Release/RendDX9.dll
+          
   build-speaker:
     name: Build speaker
     runs-on: windows-latest
@@ -118,18 +118,19 @@ jobs:
             /p:Platform=x86
 
       - name: Check artifact
+        working-directory: underfacility
         shell: pwsh
         run: |
-          if (!(Test-Path "underfacility\kbuf.dll")) {
-            Write-Error "kbuf.dll was not found"
+          if (!(Test-Path "Release\kbuf.dll")) {
+            Write-Error "Release\kbuf.dll not found"
             exit 1
           }
 
-      - name: Upload build artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: underfacility
-          path: underfacility\kbuf.dll
+          path: underfacility/Release/kbuf.dll
 
   release:
     name: Add artifacts to release

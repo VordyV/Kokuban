@@ -4,7 +4,6 @@
 #include <string>
 #include <windows.h>
 #include "MinHook/include/MinHook.h"
-#include <fmt/format.h> 
 
 const std::string VERSION = "1.0";
 const std::string TITLE = "amanda";
@@ -20,7 +19,7 @@ static HANDLE thread_Main = nullptr;
 
 void Print(std::string value)
 {
-    std::string text = fmt::format("[{}] {}\n", TITLE, value);
+    std::string text = "[" + TITLE + "] " + value + "\n";
     OutputDebugStringA(text.c_str());
 }
 
@@ -72,7 +71,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
     {
         case DLL_PROCESS_ATTACH:
             {
-                Print(fmt::format("start v{}", VERSION));
+                Print("start v" + VERSION);
+                //Print(fmt::format("start v{}", VERSION));
                 thread_Main = CreateThread(nullptr, 0, MainThread, nullptr, 0, nullptr);
                 break;
             }

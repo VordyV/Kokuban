@@ -20,6 +20,7 @@ jobs:
         uses: microsoft/setup-msbuild@v3
 
       - name: Build proxy
+        working-directory: proxy
         run: |
           msbuild proxy.vcxproj `
             /p:Configuration=Release `
@@ -110,6 +111,7 @@ jobs:
             -Wait
 
       - name: Build underfacility
+        working-directory: underfacility
         run: |
           msbuild underfacility.vcxproj `
             /p:Configuration=Release `

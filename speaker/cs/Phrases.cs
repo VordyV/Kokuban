@@ -29,7 +29,7 @@ public class Phrases
     {
         {"dialog.title.lostconn", "lost connection"},
         {"dialog.btn.close", "Close"},
-        {"dialog.txt1", "To close the window, press Alt+F4"},
+        {"dialog.txt1", "To close the window, press CTRL"},
         {"reason.ban", "You are banned on this server"}
     };
     
@@ -37,7 +37,7 @@ public class Phrases
     {
         {"dialog.title.lostconn", "подключение потеряно"},
         {"dialog.btn.close", "Закрыть"},
-        {"dialog.txt1", "Закрыть окно можно нажав Alt+F4"},
+        {"dialog.txt1", "Закрыть окно можно нажав CTRL"},
         {"reason.ban", "Вы заблокированы на этом сервере"}
     };
 }

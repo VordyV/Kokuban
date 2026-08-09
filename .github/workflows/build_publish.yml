@@ -111,7 +111,7 @@ jobs:
 
       - name: Build underfacility
         run: |
-          msbuild underfacility\*.vcxproj `
+          msbuild underfacility.vcxproj `
             /p:Configuration=Release `
             /p:Platform=x86
 

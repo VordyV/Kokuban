@@ -1,0 +1,152 @@
+name: Build Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+
+  build-proxy:
+    name: Build proxy
+    runs-on: windows-latest
+
+    steps:
+      # Task 1 — Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Task 2 — Setup vcpkg
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+
+      # Task 3 — Build
+      - name: Build proxy
+        shell: pwsh
+        run: |
+          msbuild proxy/*.vcxproj `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /m
+
+      - name: Upload proxy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: proxy
+          path: |
+            proxy/**/RendDX9.dll
+          if-no-files-found: error
+
+
+  build-speaker:
+    name: Build speaker
+    runs-on: windows-latest
+
+    steps:
+      # Task 1 — Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Task 2 — Setup .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # Task 3 — Build
+      - name: Publish speaker
+        working-directory: speaker/cs
+        run: |
+          dotnet publish -r win-x86 -c Release --self-contained
+
+      - name: Upload speaker artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: speaker
+          path: |
+            speaker/cs/bin/Release/net10.0/win-x86/publish/kbs.dll
+            speaker/cs/bin/Release/net10.0/win-x86/publish/ImGuiImpl.dll
+            speaker/cs/bin/Release/net10.0/win-x86/publish/cimgui.dll
+          if-no-files-found: error
+
+
+  build-underfacility:
+    name: Build underfacility
+    runs-on: windows-latest
+
+    steps:
+      # Task 1 — Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Task 2 — Setup DirectX SDK
+      - name: Setup DirectX SDK
+        shell: pwsh
+        run: |
+          # Здесь устанавливается/подключается DirectX SDK,
+          # необходимый проекту underfacility.
+          #
+          # Если SDK уже присутствует в runner или проект
+          # содержит корректные пути к SDK, этот шаг можно убрать.
+
+      # Task 3 — Build
+      - name: Build underfacility
+        shell: pwsh
+        run: |
+          msbuild underfacility/*.vcxproj `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /m
+
+      - name: Upload underfacility artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: underfacility
+          path: |
+            underfacility/**/kbuf.dll
+          if-no-files-found: error
+
+  release:
+    name: Add artifacts to release
+    runs-on: windows-latest
+
+    needs:
+      - build-proxy
+      - build-speaker
+      - build-underfacility
+
+    steps:
+      - name: Download proxy artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: proxy
+          path: release/proxy
+
+      - name: Download speaker artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: speaker
+          path: release/speaker
+
+      - name: Download underfacility artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: underfacility
+          path: release/underfacility
+
+      - name: Upload artifacts to GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" `
+            release/proxy/RendDX9.dll `
+            release/speaker/kbs.dll `
+            release/speaker/ImGuiImpl.dll `
+            release/speaker/cimgui.dll `
+            release/underfacility/kbuf.dll `
+            --clobber

@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Net;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -26,12 +27,20 @@ public static unsafe class Main
     public static string? Profile;
     
     private static ImGuiContextPtr _context;
-    private static Client _client = new(Program.ADDRESS, Program.PORT);
+    private static Client _client;
     private static ImFontPtr _fontRegular16;
 
     private static bool _uiFlag_IsVisibleDialogEvent = false;
     private static string _uiData_TextTitleDialogEvent = "";
     private static string _uiData_TextSubtitleDialogEvent = "";
+    
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
+
+    public static void ShowError(string title, string text)
+    {
+        MessageBox(IntPtr.Zero, text, $"[KBS] {title}", 0x10 | 0x0);
+    }
     
     [DllImport("kernel32.dll", EntryPoint = "OutputDebugStringA")]
     public static extern void OutputDebugStringA(string text);
@@ -110,10 +119,46 @@ public static unsafe class Main
         }
     }
     
+    public static bool IsIPv4(string ipString)
+    {
+        if (string.IsNullOrWhiteSpace(ipString) || ipString.Split('.').Length != 4) return false;
+        return IPAddress.TryParse(ipString, out _);
+    }
+    
     [UnmanagedCallersOnly(EntryPoint = "OnStart")]
     public static void OnStart()
     {
         Main.Print("start");
+        
+        string[] args = Environment.GetCommandLineArgs();
+        if (args.Contains("+kbsaddr"))
+        {
+            int index = args.IndexOf("+kbsaddr");
+            if (index > -1 && index+1 <= args.Length-1 && IsIPv4(args[index+1]))
+            {
+                Program.ADDRESS = args[index+1];
+            }
+            else
+            {
+                ShowError(P.Get("msg.err.invarg.title"), P.Get("msg.err.invargaddr.txt"));
+            }
+        }
+        
+        if (args.Contains("+kbsport"))
+        {
+            int index = args.IndexOf("+kbsport");
+            ushort port;
+            if (index > -1 && index+1 <= args.Length-1 && ushort.TryParse(args[index+1], out port))
+            {
+                Program.PORT = port;
+            }
+            else
+            {
+                ShowError(P.Get("msg.err.invarg.title"), P.Get("msg.err.invarport.txt"));
+            }
+        }
+        
+        Main._client = new(Program.ADDRESS, Program.PORT);
         
         Main._client.OnConnected += OnConnected;
         Main._client.OnDisconnected += OnDisconnected;
@@ -121,6 +166,8 @@ public static unsafe class Main
         Main._client.OnError += OnError;
         
         Main._client.Start();
+        
+        Print($"Client works with {Program.ADDRESS}:{Program.PORT}");
 
         Thread taskpt = new Thread(TaskProfileTracker);
         taskpt.Start();
@@ -165,6 +212,8 @@ public static unsafe class Main
     public static void OnStop()
     {
         ShouldExit = true;
+        Main._client.Stop();
+        Main._client.Dispose();
         Main.Print("stop");
     }
     

@@ -1,3 +1,7 @@
+// v1.1 - 10.08.2026
+// 
+// - Fixed a bug that occurs in Release
+
 #define FMT_UNICODE 0
 
 #include <format>

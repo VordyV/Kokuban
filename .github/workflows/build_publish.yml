@@ -8,62 +8,75 @@ permissions:
   contents: write
 
 jobs:
-
   build-proxy:
     name: Build proxy
     runs-on: windows-latest
 
     steps:
-      # Task 1 — Checkout
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # Task 2 — Setup vcpkg
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v3
 
-      # Task 3 — Build
       - name: Build proxy
+        working-directory: proxy
+        run: |
+          msbuild proxy.vcxproj `
+            /p:Configuration=Release `
+            /p:Platform=x86
+
+      - name: Check artifact
+        working-directory: proxy
         shell: pwsh
         run: |
-          msbuild proxy/*.vcxproj `
-            /p:Configuration=Release `
-            /p:Platform=x64 `
-            /m
+          if (!(Test-Path "Release\RendDX9.dll")) {
+            Write-Error "Release\RendDX9.dll not found"
+            exit 1
+          }
 
-      - name: Upload proxy artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: proxy
-          path: |
-            proxy/**/RendDX9.dll
-          if-no-files-found: error
-
-
+          path: proxy/Release/RendDX9.dll
+          
   build-speaker:
     name: Build speaker
     runs-on: windows-latest
 
     steps:
-      # Task 1 — Checkout
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # Task 2 — Setup .NET
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
-      # Task 3 — Build
-      - name: Publish speaker
-        working-directory: speaker/cs
-        run: |
-          dotnet publish -r win-x86 -c Release --self-contained
+      - name: Build speaker
+        working-directory: speaker\cs
+        run: dotnet publish -r win-x86 -c Release --self-contained
 
-      - name: Upload speaker artifacts
+      - name: Check artifacts
+        shell: pwsh
+        run: |
+          $path = "speaker\cs\bin\Release\net10.0\win-x86\publish"
+
+          $files = @(
+            "kbs.dll",
+            "ImGuiImpl.dll",
+            "cimgui.dll"
+          )
+
+          foreach ($file in $files) {
+            if (!(Test-Path "$path\$file")) {
+              Write-Error "$file was not found"
+              exit 1
+            }
+          }
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: speaker
@@ -71,44 +84,53 @@ jobs:
             speaker/cs/bin/Release/net10.0/win-x86/publish/kbs.dll
             speaker/cs/bin/Release/net10.0/win-x86/publish/ImGuiImpl.dll
             speaker/cs/bin/Release/net10.0/win-x86/publish/cimgui.dll
-          if-no-files-found: error
-
 
   build-underfacility:
     name: Build underfacility
     runs-on: windows-latest
 
     steps:
-      # Task 1 — Checkout
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # Task 2 — Setup DirectX SDK
-      - name: Setup DirectX SDK
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v3
+
+      # DirectX SDK должен быть установлен до сборки.
+      - name: Install DirectX SDK
         shell: pwsh
         run: |
-          # Здесь устанавливается/подключается DirectX SDK,
-          # необходимый проекту underfacility.
-          #
-          # Если SDK уже присутствует в runner или проект
-          # содержит корректные пути к SDK, этот шаг можно убрать.
+          $url = "https://download.microsoft.com/download/A/E/7/AE743F1F-632B-4809-87A9-AA1BB3458E31/DXSDK_Jun10.exe"
+          $installer = "$env:TEMP\DXSDK_Jun10.exe"
 
-      # Task 3 — Build
+          Invoke-WebRequest -Uri $url -OutFile $installer
+
+          Start-Process `
+            -FilePath $installer `
+            -ArgumentList "/U" `
+            -Wait
+
       - name: Build underfacility
+        working-directory: underfacility
+        run: |
+          msbuild underfacility.vcxproj `
+            /p:Configuration=Release `
+            /p:Platform=x86
+
+      - name: Check artifact
+        working-directory: underfacility
         shell: pwsh
         run: |
-          msbuild underfacility/*.vcxproj `
-            /p:Configuration=Release `
-            /p:Platform=x64 `
-            /m
+          if (!(Test-Path "Release\kbuf.dll")) {
+            Write-Error "Release\kbuf.dll not found"
+            exit 1
+          }
 
-      - name: Upload underfacility artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: underfacility
-          path: |
-            underfacility/**/kbuf.dll
-          if-no-files-found: error
+          path: underfacility/Release/kbuf.dll
 
   release:
     name: Add artifacts to release
@@ -120,33 +142,37 @@ jobs:
       - build-underfacility
 
     steps:
-      - name: Download proxy artifact
+      - name: Download proxy
         uses: actions/download-artifact@v4
         with:
           name: proxy
-          path: release/proxy
+          path: release
 
-      - name: Download speaker artifact
+      - name: Download speaker
         uses: actions/download-artifact@v4
         with:
           name: speaker
-          path: release/speaker
+          path: release
 
-      - name: Download underfacility artifact
+      - name: Download underfacility
         uses: actions/download-artifact@v4
         with:
           name: underfacility
-          path: release/underfacility
+          path: release
 
-      - name: Upload artifacts to GitHub Release
+      - name: Archive creation
         shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
+        working-directory: release
         run: |
-          gh release upload "${{ github.event.release.tag_name }}" `
-            release/proxy/RendDX9.dll `
-            release/speaker/kbs.dll `
-            release/speaker/ImGuiImpl.dll `
-            release/speaker/cimgui.dll `
-            release/underfacility/kbuf.dll `
-            --clobber
+          Compress-Archive -Path ./* -DestinationPath kokuban-${{ github.event.release.tag_name }}-win.zip
+
+      - name: Create/Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          preserve_order: true
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          files: |
+            release/kokuban-${{ github.event.release.tag_name }}-win.zip

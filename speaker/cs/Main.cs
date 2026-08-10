@@ -28,7 +28,8 @@ public static unsafe class Main
     
     private static ImGuiContextPtr _context;
     private static Client _client;
-    private static ImFontPtr _fontRegular16;
+    private static ImFontPtr _fontRegular;
+    private static ImFontPtr _fontBold;
 
     private static bool _uiFlag_IsVisibleDialogEvent = false;
     private static string _uiData_TextTitleDialogEvent = "";
@@ -316,7 +317,9 @@ public static unsafe class Main
     public static void OnBeginImgui(int init, nint device)
     {
         ImGuiIOPtr io = ImGui.GetIO();
-        Main._fontRegular16 = io.Fonts.AddFontFromFileTTF("D:\\projects\\kokuban\\Roboto-Regular.ttf");
+        io.ConfigFlags |= ImGuiConfigFlags.NoMouseCursorChange;
+        Main._fontRegular = io.Fonts.AddFontFromFileTTF("Roboto-Regular.ttf");
+        Main._fontBold = io.Fonts.AddFontFromFileTTF("Roboto-Bold.ttf");
         Main.Print("OnBeginImgui");
     }
     
@@ -343,7 +346,7 @@ public static unsafe class Main
                     _uiFlag_IsVisibleDialogEvent = false;
                 }
                 
-                ImGui.PushFont(null, 20f);
+                ImGui.PushFont(Main._fontBold, 20f);
                 ImGui.TextUnformatted(P.Get("dialog.title.lostconn").ToUpper());
                 ImGui.PopFont();
             

@@ -5,7 +5,7 @@
 #include <windows.h>
 #include "MinHook/include/MinHook.h"
 
-const std::string VERSION = "1.0";
+const std::string VERSION = "1.1";
 const std::string TITLE = "amanda";
 const std::string LIBRARY = "kbuf.dll"; 
 
@@ -50,10 +50,10 @@ DWORD WINAPI MainThread(LPVOID lpParam) {
     
     OnStart_t OnStart = (OnStart_t)GetProcAddress(library, "OnStart");
     if (OnStart) OnStart();
-
+    
     while (!shouldExit)
     {
-        
+        Sleep(100);
     }
     
     OnStop_t OnStop = (OnStop_t)GetProcAddress(library, "OnStop");

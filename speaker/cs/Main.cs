@@ -34,6 +34,7 @@ public static unsafe class Main
     private static bool _uiFlag_IsVisibleDialogEvent = false;
     private static string _uiData_TextTitleDialogEvent = "";
     private static string _uiData_TextSubtitleDialogEvent = "";
+    private static string _uiData_TitleDialogEvent = "";
     
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
@@ -85,10 +86,20 @@ public static unsafe class Main
     {
         if (type == DialogType.Ban)
         {
-            _uiFlag_IsVisibleDialogEvent = true;
             _uiData_TextTitleDialogEvent = P.Get("reason.ban");
-            _uiData_TextSubtitleDialogEvent = txt == null ? "" : txt;
-        }
+            _uiData_TitleDialogEvent = P.Get("dialog.title.lostconn").ToUpper();
+        } else if (type == DialogType.Kick)
+        {
+            _uiData_TextTitleDialogEvent = P.Get("reason.kick");
+            _uiData_TitleDialogEvent = P.Get("dialog.title.lostconn").ToUpper();
+        } else if (type == DialogType.Other)
+        {
+            _uiData_TextTitleDialogEvent = "";
+            _uiData_TitleDialogEvent = P.Get("dialog.title.notification").ToUpper();
+        } 
+        
+        _uiFlag_IsVisibleDialogEvent = true;
+        _uiData_TextSubtitleDialogEvent = txt == null ? "" : txt;
     }
     
     public static string? GetProfile()
@@ -347,17 +358,18 @@ public static unsafe class Main
                 }
                 
                 ImGui.PushFont(Main._fontBold, 20f);
-                ImGui.TextUnformatted(P.Get("dialog.title.lostconn").ToUpper());
+                ImGui.TextUnformatted(_uiData_TitleDialogEvent);
                 ImGui.PopFont();
             
                 ImGui.PushStyleColor(ImGuiCol.ChildBg, 0xFF363636u);
-                if (ImGui.BeginChild("child1", new Vector2(-1, 220),
-                        ImGuiChildFlags.AlwaysUseWindowPadding | ImGuiChildFlags.NavFlattened,
-                        ImGuiWindowFlags.NoSavedSettings))
+                if (ImGui.BeginChild("child1", new Vector2(-1, 220),  ImGuiChildFlags.AlwaysUseWindowPadding | ImGuiChildFlags.NavFlattened, ImGuiWindowFlags.NoSavedSettings))
                 {
-                    ImGui.PushFont(null, 20f);
-                    ImGui.TextUnformatted(_uiData_TextTitleDialogEvent);
-                    ImGui.PopFont();
+                    if (_uiData_TextTitleDialogEvent.Trim() != "")
+                    {
+                        ImGui.PushFont(null, 20f);
+                        ImGui.TextUnformatted(_uiData_TextTitleDialogEvent);
+                        ImGui.PopFont();
+                    }
                     
                     ImGui.PushFont(null, 20f);
                     ImGui.TextUnformatted(_uiData_TextSubtitleDialogEvent);

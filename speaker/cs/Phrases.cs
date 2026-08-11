@@ -33,7 +33,9 @@ public class Phrases
         {"reason.ban", "You are banned on this server"},
         {"msg.err.invarg.title", "Invalid argument"},
         {"msg.err.invargaddr.txt", "The kbsaddr argument contains no value or the value is invalid. A value in IPv4 format (XXX.XXX.XXX.XXX) is allowed"},
-        {"msg.err.invarport.txt", "The kbsport argument contains no value or the value is invalid. A value from 1 to 65535 is allowed"}
+        {"msg.err.invarport.txt", "The kbsport argument contains no value or the value is invalid. A value from 1 to 65535 is allowed"},
+        {"reason.kick", "You are kicked on this server"},
+        {"dialog.title.notification", "notification"},
     };
     
     private static Dictionary<string, string> Ru = new ()
@@ -44,6 +46,8 @@ public class Phrases
         {"reason.ban", "Вы заблокированы на этом сервере"},
         {"msg.err.invarg.title", "Некорректный аргумент"},
         {"msg.err.invargaddr.txt", "Аргумент kbsaddr не содержит значения или оно некорректное. Допустимо значение в формате IPv4 (XXX.XXX.XXX.XXX)"},
-        {"msg.err.invarport.txt", "Аргумент kbsport не содержит значения или оно некорректное. Допустимо значение от 1 до 65535"}
+        {"msg.err.invarport.txt", "Аргумент kbsport не содержит значения или оно некорректное. Допустимо значение от 1 до 65535"},
+        {"reason.kick", "Вы кикнуты с этого сервера"},
+        {"dialog.title.notification", "уведомление"},
     };
 }

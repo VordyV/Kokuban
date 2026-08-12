@@ -151,12 +151,20 @@ jobs:
         run: pip install poetry
 
       - name: Install dependencies
+        working-directory: server
         run: |
           poetry install --no-interaction --no-root
 
       - name: Build Executable
+        working-directory: server
         run: |
-          poetry run python -m nuitka main.py --mode=onefile --follow-imports
+          poetry run python -m nuitka main.py --mode=onefile --follow-imports --product-name=kokubanserver-${{ github.event.release.tag_name }} --product-version=${{ github.event.release.tag_name }} --file-version=${{ github.event.release.tag_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: server
+          path: server/kokubanserver-${{ github.event.release.tag_name }}-win64.exe
           
   release:
     name: Add artifacts to release

@@ -164,6 +164,9 @@ jobs:
         shell: pwsh
         working-directory: release
         run: |
+          Copy-Item -Path ../Roboto-Bold.ttf -Destination .
+          Copy-Item -Path ../Roboto-Regular.ttf -Destination .
+          Copy-Item -Path ../proxy/ORDX9.dll -Destination .
           Compress-Archive -Path ./* -DestinationPath kokuban-${{ github.event.release.tag_name }}-win.zip
 
       - name: Create/Update GitHub Release

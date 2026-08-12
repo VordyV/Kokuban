@@ -143,7 +143,7 @@ jobs:
       - name: Setup poetry
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.14'
           architecture: 'x64'
           cache: 'pip'
 
@@ -166,18 +166,58 @@ jobs:
           name: server-win64
           path: server/kokubanserver-${{ github.event.release.tag_name }}-win64.exe
 
+  build-server-linux:
+    name: Build server linux64
+    runs-on: ubuntu-16.04
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup poetry
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          architecture: 'x64'
+          cache: 'pip'
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        working-directory: server
+        run: |
+          poetry install --no-interaction --no-root
+
+      - name: Build Executable
+        working-directory: server
+        run: |
+          poetry run python -m nuitka main.py --mode=onefile --follow-imports --assume-yes-for-downloads --product-name="Kokuban server" --output-filename=kokubanserver-${{ github.event.release.tag_name }}-win64 --product-version=${{ github.event.release.tag_name }} --file-version=${{ github.event.release.tag_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-linux
+          path: server/kokubanserver-${{ github.event.release.tag_name }}-win64.bin
 
   release-server:
     name: Add artifacts server to release
     runs-on: windows-latest
     needs:
       - build-server
+      - build-server-linux
 
     steps:
       - name: Download server win64
         uses: actions/download-artifact@v4
         with:
           name: server-win64
+          path: release
+          
+      - name: Download server linux
+        uses: actions/download-artifact@v4
+        with:
+          name: server-linux
           path: release
 
       - name: Create/Update GitHub Release
@@ -190,6 +230,7 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             release/kokubanserver-${{ github.event.release.tag_name }}-win64.exe
+            release/kokubanserver-${{ github.event.release.tag_name }}-win64.bin
           
   release:
     name: Add artifacts to release

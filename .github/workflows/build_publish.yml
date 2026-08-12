@@ -142,6 +142,9 @@ jobs:
       - build-underfacility
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+    
       - name: Download proxy
         uses: actions/download-artifact@v4
         with:
@@ -160,13 +163,17 @@ jobs:
           name: underfacility
           path: release
 
+      - name: Copy release files
+        shell: pwsh
+        run: |
+          Copy-Item -Path Roboto-Bold.ttf -Destination release
+          Copy-Item -Path Roboto-Regular.ttf -Destination release
+          Copy-Item -Path proxy/ORDX9.dll -Destination release
+
       - name: Archive creation
         shell: pwsh
         working-directory: release
         run: |
-          Copy-Item -Path ../Roboto-Bold.ttf -Destination .
-          Copy-Item -Path ../Roboto-Regular.ttf -Destination .
-          Copy-Item -Path ../proxy/ORDX9.dll -Destination .
           Compress-Archive -Path ./* -DestinationPath kokuban-${{ github.event.release.tag_name }}-win.zip
 
       - name: Create/Update GitHub Release

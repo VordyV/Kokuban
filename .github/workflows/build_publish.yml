@@ -132,6 +132,32 @@ jobs:
           name: underfacility
           path: underfacility/Release/kbuf.dll
 
+  build-server:
+    name: Build server win64
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup poetry
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: 'x64'
+          cache: 'pip'
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction --no-root
+
+      - name: Build Executable
+        run: |
+          poetry run python -m nuitka main.py --mode=onefile --follow-imports
+          
   release:
     name: Add artifacts to release
     runs-on: windows-latest

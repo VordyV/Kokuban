@@ -81,6 +81,27 @@ public static unsafe class Main
             return null;
         }
     }
+    
+    public static string GetLocale()
+    {
+        const string subKeyPath = @"SOFTWARE\Electronic Arts\EA GAMES\Battlefield 2142";
+        const string valueName = "Locale";
+
+        try
+        {
+            using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
+            using (RegistryKey key = baseKey.OpenSubKey(subKeyPath))
+            {
+                if (key == null) return null;
+                object value = key.GetValue(valueName);
+                return value?.ToString();
+            }
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     public static void ShowDialog(DialogType type, string? txt = null)
     {
@@ -141,6 +162,8 @@ public static unsafe class Main
     public static void OnStart()
     {
         Main.Print("start");
+        Program.LANG = Main.GetLocale() ?? "en";
+        Main.Print($"Lang `{Program.LANG}`");
         
         string[] args = Environment.GetCommandLineArgs();
         if (args.Contains("+kbsaddr"))

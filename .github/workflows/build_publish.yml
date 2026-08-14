@@ -143,7 +143,7 @@ jobs:
       - name: Setup poetry
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: '3.14.3'
           architecture: 'x64'
           cache: 'pip'
 
@@ -177,12 +177,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: server-win64
-          path: release
-          
-      - name: Download server linux
-        uses: actions/download-artifact@v4
-        with:
-          name: server-linux
           path: release
 
       - name: Create/Update GitHub Release

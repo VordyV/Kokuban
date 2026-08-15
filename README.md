@@ -44,4 +44,7 @@ When an admin issues a ban or kick to the user, they will see a dialog box with 
     --tcpservaddr (ip address) --tcpservport (port) --httpservaddr (ip address) --httpservport (port)
     ```
 
+    `tcpservaddr` and `tcpservport` refer to the server with which the addon will interact; these are the address and port that must also be specified for the addon via `kbsaddr` and `kbsport`.
 
+    The other address and server arguments are the HTTP server. The server to which the game server sends HTTP requests to deliver useful information to the player.
+    

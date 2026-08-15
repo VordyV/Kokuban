@@ -33,3 +33,13 @@ When an admin issues a ban or kick to the user, they will see a dialog box with 
   
     They are needed to configure the connection to the desired server. By default, it is set for a local server at `127.0.0.1` `8080`.
 
+### For server
+
+1. Depending on your server platform, the instructions may differ. If it is **Windows 10-11**, you can download the ready-made server executable in the [Releases](https://github.com/VordyV/Kokuban/releases) section.
+
+   For **Linux**, you will have to build the executable yourself or deploy the project;
+   
+2. When launching, pass these arguments to it to configure the addresses and ports:
+    ```
+    --tcpservaddr (ip address) --tcpservport (port) --httpservaddr (ip address) --httpservport (port)
+    ```

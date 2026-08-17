@@ -18,6 +18,18 @@ public static class Protocol {
                 
                 Main.ShowDialog(type, txt);
             }
+            else if (pkg.Header == "showct")
+            {
+                System.Text.Json.JsonElement jTxt = (System.Text.Json.JsonElement)pkg.Body["txt"];
+                string? txt = jTxt.GetString();
+                
+                System.Text.Json.JsonElement jPrd = (System.Text.Json.JsonElement)pkg.Body["prd"];
+                int prd = jPrd.GetInt32();
+
+                TimeSpan period = TimeSpan.FromSeconds(prd);
+                
+                Main.ShowTextCentral(txt, period);
+            }
 
         }
         

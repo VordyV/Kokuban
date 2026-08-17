@@ -11,6 +11,7 @@ using Hexa.NET.ImGui.Backends.D3D9;
 using Hexa.NET.ImGui.Backends.Win32;
 using Microsoft.Win32;
 using P = speaker.Phrases;
+using Timer = System.Timers.Timer;
 
 namespace speaker;
 
@@ -32,9 +33,13 @@ public static unsafe class Main
     private static ImFontPtr _fontBold;
 
     private static bool _uiFlag_IsVisibleDialogEvent = false;
+    private static bool _uiFlag_IsVisibleCentralText = false;
     private static string _uiData_TextTitleDialogEvent = "";
     private static string _uiData_TextSubtitleDialogEvent = "";
     private static string _uiData_TitleDialogEvent = "";
+    private static string _uiData_TextCentralText = "";
+
+    private static Timer _timerTextCentral = new Timer() {AutoReset = false};
     
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
@@ -121,6 +126,18 @@ public static unsafe class Main
         
         _uiFlag_IsVisibleDialogEvent = true;
         _uiData_TextSubtitleDialogEvent = txt == null ? "" : txt;
+    }
+
+    public static void ShowTextCentral(string text, TimeSpan period)
+    {
+        if (_timerTextCentral.Enabled) _timerTextCentral.Stop();
+
+        _uiData_TextCentralText = text;
+        _uiFlag_IsVisibleCentralText = true;
+        
+        _timerTextCentral.Interval = period.TotalMilliseconds < 1 ? Program.CENTRAL_TEXT_PERIOD.TotalMilliseconds : period.TotalMilliseconds; 
+        _timerTextCentral.Elapsed += ( sender, e ) => _uiFlag_IsVisibleCentralText = false;
+        _timerTextCentral.Start();
     }
     
     public static string? GetProfile()
@@ -221,7 +238,7 @@ public static unsafe class Main
 
     public static void OnError(Exception ex)
     {
-        Main.Print($"Error: {ex.Message}");
+        Main.Print($"Error: {ex.Message}\n{ex.StackTrace}");
     }
 
     public static void OnReceive(byte[] data)
@@ -367,7 +384,7 @@ public static unsafe class Main
         
         ImGui.PushStyleColor(ImGuiCol.WindowBg, 0xFF404040u);
         ImGui.PushStyleColor(ImGuiCol.MenuBarBg, 0xFF00FFFFu);
-
+        
         if (_uiFlag_IsVisibleDialogEvent)
         {
             ImGui.SetNextWindowSize(new Vector2(550, 300), ImGuiCond.FirstUseEver);
@@ -422,6 +439,27 @@ public static unsafe class Main
             }
             
             ImGui.End();
+        }
+
+        if (_uiFlag_IsVisibleCentralText)
+        {
+            ImDrawListPtr draw_list = ImGui.GetBackgroundDrawList();
+            Vector2 display_size = ImGui.GetIO().DisplaySize;
+            
+            Vector2 text_size = ImGui.CalcTextSize(_uiData_TextCentralText);
+            
+            Vector2 pos1 = new Vector2(
+                (display_size.X - text_size.X) * 0.5f,
+                (display_size.Y - text_size.Y) * 0.5f - 30
+            );
+            
+            Vector2 pos2 = new Vector2(
+                (display_size.X - text_size.X) * 0.5f + 1,
+                (display_size.Y - text_size.Y) * 0.5f - 29
+            );
+            
+            draw_list.AddText(Main._fontBold, 24, pos2, 0xFF454545u, _uiData_TextCentralText);
+            draw_list.AddText(Main._fontBold, 24, pos1, 0xFFFCFCFCu, _uiData_TextCentralText);
         }
 
         ImGui.PopStyleColor(2);

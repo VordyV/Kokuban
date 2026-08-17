@@ -68,8 +68,8 @@ class Protocol:
 		yield
 
 	@staticmethod
-	def pkg_display_text(text: str, period: int = 7):
-		return Package.create_pkg(PackageType.Request, "displaytext", {"txt": text, "prd": period})
+	def pkg_show_central_text(text: str, period: int = 7):
+		return Package.create_pkg(PackageType.Request, "showct", {"txt": text, "prd": period})
 
 	@staticmethod
 	async def pkg_updateprofile(client: Client, pkg: Package) -> AsyncGenerator[Package]:

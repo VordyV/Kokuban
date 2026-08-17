@@ -42,6 +42,7 @@ class KokubanServer:
 
 		self.__shell.register("notify", self._on_cmd_notify)
 		self.__shell.register("showdialog", self._on_cmd_show_dialog)
+		self.__shell.register("showct", self._on_cmd_show_central_text)
 		self.__shell.register("srv.add", self._on_cmd_srv_add)
 		self.__shell.register("srv.list", self._on_cmd_srv_list)
 		self.__shell.register("srv.upd", self._on_cmd_srv_update)
@@ -53,6 +54,9 @@ class KokubanServer:
 
 	async def _on_cmd_show_dialog(self, type: int, *text: str):
 		await self.__tcp_server.broadcast(Protocol.pkg_show_dialog(type, " ".join(text)).get_bytes())
+
+	async def _on_cmd_show_central_text(self, period: int, *text: str):
+		await self.__tcp_server.broadcast(Protocol.pkg_show_central_text(" ".join(text), period=period).get_bytes())
 
 	async def _on_cmd_srv_add(self, name: str, comment: str = ""):
 		name = name.strip().replace(" ", "_")

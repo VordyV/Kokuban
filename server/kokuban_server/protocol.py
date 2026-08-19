@@ -54,10 +54,6 @@ class Protocol:
 		yield Package.create_pkg(PackageType.Response, "info", {"ver": "1.0"})
 
 	@staticmethod
-	def pkg_notify(text: str):
-		return Package.create_pkg(PackageType.Request, "notify", {"txt": text})
-
-	@staticmethod
 	def pkg_ping():
 		return Package.create_pkg(PackageType.Request, "ping", {})
 
@@ -70,6 +66,14 @@ class Protocol:
 	@staticmethod
 	def pkg_show_central_text(text: str, period: int = 7):
 		return Package.create_pkg(PackageType.Request, "showct", {"txt": text, "prd": period})
+
+	@staticmethod
+	def pkg_set_bottom_status_bar(text: str):
+		return Package.create_pkg(PackageType.Request, "setbsb", {"txt": text})
+
+	@staticmethod
+	def pkg_clear_bottom_status_bar():
+		return Package.create_pkg(PackageType.Request, "clearbsb", {})
 
 	@staticmethod
 	async def pkg_updateprofile(client: Client, pkg: Package) -> AsyncGenerator[Package]:

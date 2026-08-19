@@ -26,6 +26,10 @@ public static unsafe class Main
 {
     public static bool ShouldExit = false;
     public static string? Profile;
+    public static bool IsConnectedGameServer = false;
+    public static string? AddressGameServer;
+    public static ushort PortGameServer = 0;
+    public static ushort QueryPortGameServer = 0;
     
     private static ImGuiContextPtr _context;
     private static Client _client;
@@ -34,10 +38,13 @@ public static unsafe class Main
 
     private static bool _uiFlag_IsVisibleDialogEvent = false;
     private static bool _uiFlag_IsVisibleCentralText = false;
+    private static bool _uiFlag_IsVisibleBottomStatusBar = false;
+    
     private static string _uiData_TextTitleDialogEvent = "";
     private static string _uiData_TextSubtitleDialogEvent = "";
     private static string _uiData_TitleDialogEvent = "";
     private static string _uiData_TextCentralText = "";
+    private static string _uiData_TextBottomStatusBarText = "";
 
     private static Timer _timerTextCentral = new Timer() {AutoReset = false};
     
@@ -140,7 +147,19 @@ public static unsafe class Main
         _timerTextCentral.Start();
     }
     
-    public static string? GetProfile()
+    public static void SetBottomStatusBar(string text)
+    {
+        _uiData_TextBottomStatusBarText = text;
+        _uiFlag_IsVisibleBottomStatusBar = true;
+    }
+
+    public static void ClearBottomStatusBar()
+    {
+        _uiData_TextBottomStatusBarText = "";
+        _uiFlag_IsVisibleBottomStatusBar = false;
+    }
+    
+    public static string? GetProfile() //IsConn GS 00A1B5D8 byte, Addrs GS 00A22200 str(9), Port GS 00A3FCA2 2 bytes, Query port GS 00A3FCA0 2 bytes
     {
         IntPtr address = new IntPtr(0x00A228B9);
         string? result = Marshal.PtrToStringAnsi(address);
@@ -148,13 +167,65 @@ public static unsafe class Main
         return result.Trim();
     }
 
-    public static void TaskProfileTracker()
+    public static bool GetOpenMenu()
+    {
+        IntPtr address = new IntPtr(0x00A0F7A8);
+        return Marshal.ReadByte(address) > 1;
+    }
+    
+    public static bool GetOpenGamePanel()
+    {
+        IntPtr address = new IntPtr(0x00A7A015);
+        return Marshal.ReadByte(address) > 1;
+    }
+    
+    public static bool GetConnGameServer()
+    {
+        IntPtr address = new IntPtr(0x00A1B5D8);
+        return Marshal.ReadByte(address) > 1;
+    }
+    
+    public static string? GetAddressGS()
+    {
+        IntPtr address = new IntPtr(0x00A22200);
+        string? result = Marshal.PtrToStringAnsi(address);
+        return result;
+    }
+    
+    public static ushort GetPortGS()
+    {
+        IntPtr address = new IntPtr(0x00A3FCA2);
+        return (ushort)Marshal.ReadInt16(address);
+    }
+    
+    public static ushort GetQueryPortGS()
+    {
+        IntPtr address = new IntPtr(0x00A3FCA0);
+        return (ushort)Marshal.ReadInt16(address);
+    }
+
+    public static void TaskTracker()
     {
         Profile = GetProfile();
+        IsConnectedGameServer = GetConnGameServer();
+        AddressGameServer = GetAddressGS();
+        PortGameServer = GetPortGS();
+        QueryPortGameServer = GetQueryPortGS();
+        
         string? profile;
+        bool isConn;
+        string? addressGS;
+        ushort portGS;
+        ushort queryPortGS;
+        
         while (!ShouldExit)
         {
             profile = GetProfile();
+            isConn = GetConnGameServer();
+            addressGS = GetAddressGS();
+            portGS = GetPortGS();
+            queryPortGS = GetQueryPortGS();
+            
             if (profile != Profile)
             {
                 Profile = profile;
@@ -165,6 +236,31 @@ public static unsafe class Main
                     Print($"profile updated: `{Profile}`");
                 }
             }
+
+            if (isConn != IsConnectedGameServer)
+            {
+                IsConnectedGameServer = isConn;
+                if (IsConnectedGameServer) Print($"Connected to GS"); else Print($"Disconnected from GS");
+            }
+
+            if (addressGS != AddressGameServer)
+            {
+                AddressGameServer = addressGS;
+                Print($"Address GS: `{AddressGameServer}`");
+            }
+            
+            if (portGS != PortGameServer)
+            {
+                PortGameServer = portGS;
+                Print($"Port GS: {PortGameServer}");
+            }
+            
+            if (queryPortGS != QueryPortGameServer)
+            {
+                QueryPortGameServer = queryPortGS;
+                Print($"Query port GS: {QueryPortGameServer}");
+            }
+            
             Thread.Sleep(TimeSpan.FromMilliseconds(100));
         }
     }
@@ -221,7 +317,7 @@ public static unsafe class Main
         
         Print($"Client works with {Program.ADDRESS}:{Program.PORT}");
 
-        Thread taskpt = new Thread(TaskProfileTracker);
+        Thread taskpt = new Thread(TaskTracker);
         taskpt.Start();
     }
     
@@ -374,6 +470,32 @@ public static unsafe class Main
         Main.Print("OnBeginImgui");
     }
     
+    public static uint ColorFromHex(string hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex))
+            return 0xFFFFFFFF;
+
+        hex = hex.TrimStart('#');
+        
+        if (hex.Length == 3)
+        {
+            hex = $"{hex[0]}{hex[0]}{hex[1]}{hex[1]}{hex[2]}{hex[2]}";
+        }
+
+        if (hex.Length == 6)
+            hex += "FF";
+
+        if (hex.Length != 8)
+            throw new ArgumentException("Invalid hex color format");
+        
+        byte r = Convert.ToByte(hex.Substring(0, 2), 16);
+        byte g = Convert.ToByte(hex.Substring(2, 2), 16);
+        byte b = Convert.ToByte(hex.Substring(4, 2), 16);
+        byte a = Convert.ToByte(hex.Substring(6, 2), 16);
+
+        return (uint)((a << 24) | (b << 16) | (g << 8) | r);
+    }
+    
     [UnmanagedCallersOnly(EntryPoint = "OnEndScene", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static void OnEndScene(int init)
     {
@@ -462,6 +584,21 @@ public static unsafe class Main
             draw_list.AddText(Main._fontBold, 24, pos1, 0xFFFCFCFCu, _uiData_TextCentralText);
         }
 
+        if (_uiFlag_IsVisibleBottomStatusBar)
+        {
+            ImDrawListPtr draw_list = ImGui.GetBackgroundDrawList();
+            Vector2 display_size = ImGui.GetIO().DisplaySize;
+            
+            Vector2 text_size = ImGui.CalcTextSize(_uiData_TextBottomStatusBarText);
+            
+            Vector2 pos1 = new Vector2(
+                (display_size.X - text_size.X) * 0.5f,
+                display_size.Y - text_size.Y - 60.0f
+            );
+            
+            draw_list.AddText(Main._fontBold, 16, pos1, ColorFromHex("#fcba03"), _uiData_TextBottomStatusBarText);
+        }
+        
         ImGui.PopStyleColor(2);
 
         ImGui.Render();

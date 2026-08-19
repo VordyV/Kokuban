@@ -5,6 +5,8 @@ from callixir import AsyncSimpleShell
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+
+from .package import Package
 from .views import router
 from .server import Server
 from .protocol import Protocol
@@ -40,23 +42,29 @@ class KokubanServer:
 
 		self.__fa_app.include_router(router)
 
-		self.__shell.register("notify", self._on_cmd_notify)
-		self.__shell.register("showdialog", self._on_cmd_show_dialog)
-		self.__shell.register("showct", self._on_cmd_show_central_text)
+		self.__shell.register("dialog.show", self._on_cmd_show_dialog_all)
+		self.__shell.register("dialog.show.pfl", self._on_cmd_show_dialog_profile)
+		self.__shell.register("dialog.show.kh", self._on_cmd_show_dialog_keyhash)
+		self.__shell.register("ct.show", self._on_cmd_show_central_text_all)
+		self.__shell.register("ct.show.pfl", self._on_cmd_show_central_text_profile)
+		self.__shell.register("ct.show.kh", self._on_cmd_show_central_text_keyhash)
+		self.__shell.register("bsb.set", self._on_cmd_set_bsb_all)
+		self.__shell.register("bsb.set.pfl", self._on_cmd_set_bsb_profile)
+		self.__shell.register("bsb.set.kh", self._on_cmd_set_bsb_keyhash)
 		self.__shell.register("srv.add", self._on_cmd_srv_add)
 		self.__shell.register("srv.list", self._on_cmd_srv_list)
 		self.__shell.register("srv.upd", self._on_cmd_srv_update)
 		self.__shell.register("srv.del", self._on_cmd_srv_delete)
 		self.__shell.register("c.list", self._on_cmd_client_list)
+		self.__shell.register("help", self._on_cmd_help)
 
-	async def _on_cmd_notify(self, text: str):
-		await self.__tcp_server.broadcast(Protocol.pkg_notify(text).get_bytes())
+	async def _on_cmd_show_dialog_all(self, type: int,  *text: str): await self.show_dialog_all(AdminEventType(type), " ".join(text))
+	async def _on_cmd_show_dialog_profile(self, profile: str, type: int,  *text: str): await self.show_dialog_for_profile(profile, AdminEventType(type), " ".join(text))
+	async def _on_cmd_show_dialog_keyhash(self, keyhash: str, type: int,  *text: str): await self.show_dialog_for_keyhash(keyhash, AdminEventType(type), " ".join(text))
 
-	async def _on_cmd_show_dialog(self, type: int, *text: str):
-		await self.__tcp_server.broadcast(Protocol.pkg_show_dialog(type, " ".join(text)).get_bytes())
-
-	async def _on_cmd_show_central_text(self, period: int, *text: str):
-		await self.__tcp_server.broadcast(Protocol.pkg_show_central_text(" ".join(text), period=period).get_bytes())
+	async def _on_cmd_show_central_text_all(self, period: int, *text: str): await self.show_central_text_all(period=period, text=" ".join(text))
+	async def _on_cmd_show_central_text_profile(self, profile: str, period: int, *text: str): await self.show_central_text_for_profile(profile=profile, period=period, text=" ".join(text))
+	async def _on_cmd_show_central_text_keyhash(self, keyhash: str, period: int, *text: str): await self.show_central_text_for_keyhash(keyhash=keyhash, period=period, text=" ".join(text))
 
 	async def _on_cmd_srv_add(self, name: str, comment: str = ""):
 		name = name.strip().replace(" ", "_")
@@ -134,15 +142,60 @@ class KokubanServer:
 			print("{:<33} {:<12} {:<12} {:<18} {:<6} {:<12} {:<18}".format("ID", "Address", "Port", "Auth", "LSPRT", "Profile", "KeyHash"))
 			print(rows)
 
-	async def sendAdminEvent(self, type: AdminEventType, param: RecipientParamType, text: str = "", recipient: str | None = None):
-		if recipient == None and (param == param.Profile or param == param.KeyHash): raise Exception("Recipient must not be None for parameters by profile and keyhash")
+	async def _on_cmd_set_bsb_all(self, *text): await self.set_BSB_all(" ".join(text) if len(text) > 0 else None)
+	async def _on_cmd_set_bsb_profile(self, profile: str, *text): await self.set_BSB_for_profile(profile=profile, text=" ".join(text) if len(text) > 0 else None)
+	async def _on_cmd_set_bsb_keyhash(self, keyhash: str, *text): await self.set_BSB_for_keyhash(keyhash=keyhash, text=" ".join(text) if len(text) > 0 else None)
 
-		if param == param.Broadcast:
-			await self.__tcp_server.broadcast(Protocol.pkg_show_dialog(type.value, text).get_bytes())
-		elif param == param.Profile:
-			await self.__tcp_server.send_to_profile(Protocol.pkg_show_dialog(type.value, text).get_bytes(), recipient)
-		elif param == param.KeyHash:
-			await self.__tcp_server.send_to_keyhash(Protocol.pkg_show_dialog(type.value, text).get_bytes(), recipient)
+	async def _on_cmd_help(self):
+		print(self.__shell.beautiful_help)
+	#
+	# dialog
+	async def show_dialog_for_profile(self, profile: str, type: AdminEventType, text: str):
+		await self.send_command(recipient_param=RecipientParamType.Profile, recipient=profile, pkg=Protocol.pkg_show_dialog(type=type.value, text=text))
+
+	async def show_dialog_for_keyhash(self, keyhash: str, type: AdminEventType, text: str):
+		await self.send_command(recipient_param=RecipientParamType.KeyHash, recipient=keyhash, pkg=Protocol.pkg_show_dialog(type=type.value, text=text))
+
+	async def show_dialog_all(self, type: AdminEventType, text: str):
+		await self.send_command(recipient_param=RecipientParamType.Broadcast, recipient=None, pkg=Protocol.pkg_show_dialog(type=type.value, text=text))
+	# dialog
+	#
+
+	#
+	# central text
+	async def show_central_text_for_profile(self, profile: str, text: str, period: int = 7):
+		await self.send_command(recipient_param=RecipientParamType.Profile, recipient=profile, pkg=Protocol.pkg_show_central_text(text, period))
+
+	async def show_central_text_for_keyhash(self, keyhash: str, text: str, period: int = 7):
+		await self.send_command(recipient_param=RecipientParamType.KeyHash, recipient=keyhash, pkg=Protocol.pkg_show_central_text(text, period))
+
+	async def show_central_text_all(self, text: str, period: int = 7):
+		await self.send_command(recipient_param=RecipientParamType.Broadcast, recipient=None, pkg=Protocol.pkg_show_central_text(text, period))
+	# central text
+	#
+
+	#
+	# bottom status bar
+	async def set_BSB_for_profile(self, profile: str, text: str | None):
+		if text: await self.send_command(recipient_param=RecipientParamType.Profile, recipient=profile, pkg=Protocol.pkg_set_bottom_status_bar(text))
+		else: await self.send_command(recipient_param=RecipientParamType.Profile, recipient=profile, pkg=Protocol.pkg_clear_bottom_status_bar())
+
+	async def set_BSB_for_keyhash(self, keyhash: str, text: str | None):
+		if text: await self.send_command(recipient_param=RecipientParamType.KeyHash, recipient=keyhash, pkg=Protocol.pkg_set_bottom_status_bar(text))
+		else: await self.send_command(recipient_param=RecipientParamType.KeyHash, recipient=keyhash, pkg=Protocol.pkg_clear_bottom_status_bar())
+
+	async def set_BSB_all(self, text: str | None):
+		if text: await self.send_command(recipient_param=RecipientParamType.Broadcast, recipient=None, pkg=Protocol.pkg_set_bottom_status_bar(text))
+		else: await self.send_command(recipient_param=RecipientParamType.Broadcast, recipient=None, pkg=Protocol.pkg_clear_bottom_status_bar())
+	# bottom status bar
+	#
+
+	async def send_command(self, recipient_param: RecipientParamType, recipient: str | None, pkg: Package):
+		if recipient == None and (recipient_param == recipient_param.Profile or recipient_param == recipient_param.KeyHash): raise Exception("Recipient must not be None for parameters by profile and keyhash")
+
+		if recipient_param == recipient_param.Broadcast: await self.__tcp_server.broadcast(pkg.get_bytes())
+		elif recipient_param == recipient_param.Profile: await self.__tcp_server.send_to_profile(pkg.get_bytes(), recipient)
+		elif recipient_param == recipient_param.KeyHash: await self.__tcp_server.send_to_keyhash(pkg.get_bytes(), recipient)
 		else: raise Exception("Invalid parameter type")
 
 	async def create_tables(self):

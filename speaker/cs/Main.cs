@@ -146,6 +146,13 @@ public static unsafe class Main
         _timerTextCentral.Elapsed += ( sender, e ) => _uiFlag_IsVisibleCentralText = false;
         _timerTextCentral.Start();
     }
+
+    public static void HideDialog()
+    {
+        _uiFlag_IsVisibleDialogEvent = false;
+        _uiData_TitleDialogEvent = "";
+        _uiData_TextSubtitleDialogEvent = "";
+    }
     
     public static void SetBottomStatusBar(string text)
     {
@@ -241,6 +248,9 @@ public static unsafe class Main
             {
                 IsConnectedGameServer = isConn;
                 if (IsConnectedGameServer) Print($"Connected to GS"); else Print($"Disconnected from GS");
+                
+                ClearBottomStatusBar();
+                HideDialog();
             }
 
             if (addressGS != AddressGameServer)
@@ -563,7 +573,7 @@ public static unsafe class Main
             ImGui.End();
         }
 
-        if (_uiFlag_IsVisibleCentralText)
+        if (_uiFlag_IsVisibleCentralText && !(GetOpenMenu() || GetOpenGamePanel()))
         {
             ImDrawListPtr draw_list = ImGui.GetBackgroundDrawList();
             Vector2 display_size = ImGui.GetIO().DisplaySize;
@@ -584,7 +594,7 @@ public static unsafe class Main
             draw_list.AddText(Main._fontBold, 24, pos1, 0xFFFCFCFCu, _uiData_TextCentralText);
         }
 
-        if (_uiFlag_IsVisibleBottomStatusBar)
+        if (_uiFlag_IsVisibleBottomStatusBar && !(GetOpenMenu() || GetOpenGamePanel()))
         {
             ImDrawListPtr draw_list = ImGui.GetBackgroundDrawList();
             Vector2 display_size = ImGui.GetIO().DisplaySize;

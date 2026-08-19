@@ -10,6 +10,7 @@
         <SelfContained>true</SelfContained>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <AssemblyName>kbs</AssemblyName>
+        <Version>2.0.0</Version>
     </PropertyGroup>
 
     <ItemGroup>

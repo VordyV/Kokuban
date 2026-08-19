@@ -28,7 +28,18 @@ public static class Protocol {
 
                 TimeSpan period = TimeSpan.FromSeconds(prd);
                 
-                Main.ShowTextCentral(txt, period);
+                Main.ShowTextCentral(txt ?? "", period);
+            }
+            else if (pkg.Header == "setbsb")
+            {
+                System.Text.Json.JsonElement jTxt = (System.Text.Json.JsonElement)pkg.Body["txt"];
+                string? txt = jTxt.GetString();
+                
+                Main.SetBottomStatusBar(txt ?? "");
+            }
+            else if (pkg.Header == "clearbsb")
+            {
+                Main.ClearBottomStatusBar();
             }
 
         }

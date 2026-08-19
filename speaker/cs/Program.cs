@@ -8,4 +8,5 @@ public class Program
     public static string LANG = "ru";
     public static readonly string VERSION = "1.0";
     public static readonly TimeSpan CENTRAL_TEXT_PERIOD = TimeSpan.FromSeconds(7);
+    public static readonly TimeSpan BOTTOM_STATUS_BAR_PERIOD = TimeSpan.FromSeconds(3);
 }
